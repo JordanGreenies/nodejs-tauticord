@@ -150,6 +150,10 @@ function formatStreamingData(sessions) {
     return `${timeUpdated}${sessionDetails}${stats}`;
 }
 
+function waitForInterval(ms) {
+    return new Promise(resolve => setInterval(resolve, ms));
+}
+
 async function updateDiscordChannel() {
     const channel = await client.channels.fetch(DISCORD_CHANNEL_ID);
 
@@ -183,9 +187,12 @@ async function updateDiscordChannel() {
     }
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
-    setInterval(updateDiscordChannel, REFRESH_TIME);
+    while (true) {
+        await updateDiscordChannel();
+        await waitForInterval(REFRESH_TIME); // Wait for 10 seconds before next call
+    }
 });
 
 client.login(DISCORD_BOT_TOKEN);
