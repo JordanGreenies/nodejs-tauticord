@@ -188,7 +188,7 @@ function formatStreamingData(sessions) {
 				: `\n🛜 ${quality} (${bitrate_value.toLocaleString()} kbps)`
 			: '';
         //const player = session.player ? `\n🖥️ Player: ${session.player}` : '';
-        const transcoding = session.transcode_decision === 'direct play' ? '\n✅ Direct Play' : `\n🔄 Transcoding (${session.transcode_hw_encode})`;
+        const transcoding = session.transcode_decision === 'direct play' ? '\n✅ Direct Play' : `\n🔄 Transcoding`;
 		
         return `${emoji} **${session.friendly_name}** ${watchingStr} **${imdbLink}** ${episode} (${session.year || 'N/A'})${progressBar}${bitrate}${transcoding}`;
     }).join('\n\n');
