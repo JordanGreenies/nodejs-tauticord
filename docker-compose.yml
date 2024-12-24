@@ -1,0 +1,13 @@
+version: "2"
+services:
+  discord-bot:
+    image: "node:latest"
+    user: "node"
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./:/home/node/app
+    command: "npm start"
+    network_mode: host
+    restart: always

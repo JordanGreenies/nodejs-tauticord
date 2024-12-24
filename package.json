@@ -1,0 +1,18 @@
+{
+  "name": "Tautulli discord bot",
+  "version": "1.0.0",
+  "description": "Tautulli discord bot",
+  "main": "bot.js",
+  "scripts": {
+    "start": "npm i discord.js@latest axios dayjs fs path && node bot.js"
+  },
+  "author": "JordanGreenies",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dayjs": "^1.11.13",
+    "discord.js": "^14.16.3",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "TAUTULLI_URL": "http://localhost:8181",
+  "TAUTULLI_API_KEY": "",
+  "DISCORD_BOT_TOKEN": "",
+  "DISCORD_CHANNEL_ID": "",
+  "REFRESH_TIME": 10000
+}
