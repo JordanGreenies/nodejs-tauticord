@@ -45,12 +45,6 @@ async function fetchStreamingData() {
     }
 }
 
-function createProgressBar(current, total, length = 20) {
-    const progress = Math.round((current / total) * length);
-    const bar = '█'.repeat(progress) + '░'.repeat(length - progress);
-    return `[${bar}]`;
-}
-
 function formatImdbLink(imdbId, title) {
     return imdbId ? `[${title}](<https://www.imdb.com/title/${imdbId}/>)` : title;
 }
@@ -93,9 +87,10 @@ function getAggregateStats(sessions) {
 
     sessions.forEach(session => {
         totalStreams++;
-        if (session.local == 0 && session.stream_bitrate) totalBitrate += Number(session.stream_bitrate);
+		const bitrate_value = Number(session.stream_bitrate) > 0 ? Number(session.stream_bitrate) : Number(session.bitrate);
+        if (session.local == 0 && bitrate_value) totalBitrate += Number(bitrate_value);
         if (session.transcode_decision !== 'direct play') transcodingCount++;
-        if (session.local == 1 && session.stream_bitrate) localBitrate += Number(session.stream_bitrate);
+        if (session.local == 1 && bitrate_value) localBitrate += Number(bitrate_value);
     });
 
     const totalBitrateFormatted =
@@ -111,6 +106,55 @@ function getAggregateStats(sessions) {
     return `\n\n📊 **Stats:** ${totalStreams} streaming (${transcodingCount} transcoding) @ 📶 ${totalBitrateFormatted} (🏠 ${localBitrateFormatted} local)`;
 }
 
+function extractEmoji(username, media_type) {
+    const emojis = {
+        movie: '🎥',
+        track: '🎵',
+        default: '📺'
+    };
+   const numberEmojis = [
+        ':zero:', ':one:', ':two:', ':three:', ':four:', 
+        ':five:', ':six:', ':seven:', ':eight:', ':nine:'
+    ];
+	
+    const firstChar = username[0].toLowerCase();
+
+    if (/[a-z]/.test(firstChar)) {
+        return `:regional_indicator_${firstChar}:`;
+    } else if (/[0-9]/.test(firstChar)) {
+        return numberEmojis[Number(firstChar)];
+    } else {
+        const mediaType = getMediaType();
+        return emojis[mediaType] || emojis.default;
+	}
+}
+
+function calculateFinishTime(session) {
+    const viewOffsetMs = parseInt(session.view_offset, 10);
+    const durationMs = parseInt(session.duration, 10);
+
+    if (isNaN(viewOffsetMs) || isNaN(durationMs)) {
+        throw new Error("Invalid session data: view_offset and duration must be numbers.");
+    }
+
+    const remainingTimeMs = durationMs - viewOffsetMs;
+    const remainingTimeSeconds = Math.floor(remainingTimeMs / 1000);
+
+    const currentTime = new Date();
+    const finishTime = new Date(currentTime.getTime() + remainingTimeMs);
+
+    const finishTimeFormatted = finishTime.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true 
+    });
+
+    return {
+        remainingTimeSeconds,
+        finishTime: finishTimeFormatted
+    };
+}
+
 function formatStreamingData(sessions) {
 	const timeUpdated = `🕒 **Last Updated:** ${dayjs().format('HH:mm:ss')} \n\n`;
 
@@ -120,29 +164,33 @@ function formatStreamingData(sessions) {
 		//console.log(session);
         const imdbId = extractImdbId(session.guid, session.guids);
         const imdbLink = formatImdbLink(imdbId, session.full_title);
-        const emojis = session.media_type === 'movie' ? '🎥' :
-            session.media_type === 'track' ? '🎵' : '📺';		
+        const emoji = extractEmoji(session.friendly_name, session.media_type);
 		const watchingStr = session.state === 'paused' ? 'has paused' : session.media_type === 'track' ? 'is listening to' : 'is watching';
 		const episode = session.media_type === 'episode' ? `S${String(session.parent_media_index).padStart(2, '0')} E${String(session.media_index).padStart(2, '0')}` : '';
 		
+		const endTime = calculateFinishTime(session);
         const progressBar = session.view_offset && session.duration
-            ? `\n⏱️ ${createProgressBar(session.view_offset, session.duration, session.state)}`
+            ? `\n⏱️ ${createProgressBar(session.view_offset, session.duration, session.state)} *ETA ${endTime.finishTime}*`
             : '';
 
-        const quality = session.stream_video_full_resolution
+        let quality = session.stream_video_full_resolution
             ? session.video_full_resolution !== session.stream_video_full_resolution
                 ? `${session.video_full_resolution} -> ${session.stream_video_full_resolution}`
                 : `${session.stream_video_full_resolution}`
             : '';
+		if(session.media_type === 'track' && session.stream_container)
+			quality = session.stream_container.toUpperCase();
 			
-		const bitrate = session.stream_bitrate
-			? session.stream_bitrate > 1000
-				? `\n🛜 ${quality} (${(session.stream_bitrate / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mbps)`
-				: `\n🛜 ${quality} (${session.stream_bitrate.toLocaleString()} kbps)`
+		const bitrate_value = Number(session.stream_bitrate) > 0 ? Number(session.stream_bitrate) : Number(session.bitrate);
+		const bitrate = bitrate_value
+			? bitrate_value > 1000
+				? `\n🛜 ${quality} (${(bitrate_value / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mbps)`
+				: `\n🛜 ${quality} (${bitrate_value.toLocaleString()} kbps)`
 			: '';
         //const player = session.player ? `\n🖥️ Player: ${session.player}` : '';
-        const transcoding = session.transcode_decision === 'direct play' ? ' ✅ Direct Play' : ' 🔄 Transcoding';
-        return `${emojis} **${session.friendly_name}** ${watchingStr} **${imdbLink}** ${episode} (${session.year || 'N/A'})${progressBar}${bitrate}${transcoding}`;
+        const transcoding = session.transcode_decision === 'direct play' ? '\n✅ Direct Play' : `\n🔄 Transcoding (${session.transcode_hw_encode})`;
+		
+        return `${emoji} **${session.friendly_name}** ${watchingStr} **${imdbLink}** ${episode} (${session.year || 'N/A'})${progressBar}${bitrate}${transcoding}`;
     }).join('\n\n');
 
     const stats = getAggregateStats(sessions);
