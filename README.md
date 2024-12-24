@@ -1,3 +1,4 @@
+Simple, zero bloat, nodejs Discord bot for tautulli, displaying all the current streams, quality and bitrate.
 
 ## Docker instructions:
 ```
