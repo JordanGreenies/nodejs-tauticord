@@ -170,7 +170,6 @@ async function updateDiscordChannel() {
         const lastMessage = messages.first();
 
         if (lastMessage && lastMessage.id === lastMessageId && lastMessage.author.id === client.user.id) {
-			lastMessage.suppressEmbeds(true);
             await lastMessage.edit(messageContent);
         } else {
             if (lastMessageId) {
@@ -178,7 +177,6 @@ async function updateDiscordChannel() {
                 if (oldMessage) await oldMessage.delete();
             }
             const newMessage = await channel.send(messageContent);
-			newMessage.suppressEmbeds(true);
             lastMessageId = newMessage.id;
             saveLastMessageId(lastMessageId);
         }
@@ -191,7 +189,7 @@ client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
     while (true) {
         await updateDiscordChannel();
-        await waitForInterval(REFRESH_TIME); // Wait for 10 seconds before next call
+        await waitForInterval(REFRESH_TIME);
     }
 });
 
