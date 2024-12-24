@@ -112,9 +112,9 @@ function getAggregateStats(sessions) {
 }
 
 function formatStreamingData(sessions) {
-    if (sessions.length === 0) return '🎬 **No users are currently streaming on Plex.**';
+	const timeUpdated = `🕒 **Last Updated:** ${dayjs().format('HH:mm:ss')} \n\n`;
 
-    const timeUpdated = `🕒 **Last Updated:** ${dayjs().format('HH:mm:ss')} \n\n`;
+    if (sessions.length === 0) return `${timeUpdated}🎬 **No users are currently streaming on Plex.**`;
 
     const sessionDetails = sessions.map(session => {
 		//console.log(session);
