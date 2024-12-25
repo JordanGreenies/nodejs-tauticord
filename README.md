@@ -8,4 +8,4 @@ vi config.json
 docker-compose up
 ```
 
-![image](https://github.com/user-attachments/assets/a3e5da05-bf4b-483b-bee3-53cdd45907a4)
+![image](https://github.com/user-attachments/assets/7169e138-85d5-4d8d-9f50-8e4d83a1f778)
