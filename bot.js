@@ -103,7 +103,7 @@ function getAggregateStats(sessions) {
             ? `${(localBitrate / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mbps`
             : `${localBitrate} kbps`;
 
-    return `\n\n📊 **Stats:** ${totalStreams} streaming (${transcodingCount} transcoding) @ 📶 ${totalBitrateFormatted} (🏠 ${localBitrateFormatted} local)`;
+    return `\n📊 **Stats:** ${totalStreams} streaming (${transcodingCount} transcoding) @ 📶 ${totalBitrateFormatted} (🏠 ${localBitrateFormatted} local)`;
 }
 
 function extractEmoji(username, media_type) {
@@ -156,10 +156,10 @@ function calculateFinishTime(session) {
 }
 
 function formatStreamingData(sessions) {
-	const timeUpdated = `🕒 **Last Updated:** ${dayjs().format('HH:mm:ss')} \n\n`;
-
+	const separator = '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+	const timeUpdated = `🕒 **Last Updated:** ${dayjs().format('HH:mm:ss')} \n${separator}`;
     if (sessions.length === 0) return `${timeUpdated}🎬 **No users are currently streaming on Plex.**`;
-
+	
     const sessionDetails = sessions.map(session => {
 		//console.log(session);
         const imdbId = extractImdbId(session.guid, session.guids);
@@ -180,22 +180,22 @@ function formatStreamingData(sessions) {
             : '';
 		if(session.media_type === 'track' && session.stream_container)
 			quality = session.stream_container.toUpperCase();
-			
+		
+		const transcoding = session.transcode_decision === 'direct play' ? 'Direct' : `Transcoding`;
 		const bitrate_value = Number(session.stream_bitrate) > 0 ? Number(session.stream_bitrate) : Number(session.bitrate);
 		const bitrate = bitrate_value
 			? bitrate_value > 1000
-				? `\n🛜 ${quality} (${(bitrate_value / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mbps)`
-				: `\n🛜 ${quality} (${bitrate_value.toLocaleString()} kbps)`
+				? `\n🛜 ${transcoding} ${quality} (${(bitrate_value / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mbps)`
+				: `\n🛜 ${transcoding} ${quality} (${bitrate_value.toLocaleString()} kbps)`
 			: '';
         //const player = session.player ? `\n🖥️ Player: ${session.player}` : '';
-        const transcoding = session.transcode_decision === 'direct play' ? '\n✅ Direct Play' : `\n🔄 Transcoding`;
 		
-        return `${emoji} **${session.friendly_name}** ${watchingStr} **${imdbLink}** ${episode} (${session.year || 'N/A'})${progressBar}${bitrate}${transcoding}`;
-    }).join('\n\n');
+        return `${emoji} **${session.friendly_name}** ${watchingStr} **${imdbLink}** ${episode} (${session.year || 'N/A'})${progressBar}${bitrate}`;
+    }).join(separator);
 
     const stats = getAggregateStats(sessions);
 
-    return `${timeUpdated}${sessionDetails}${stats}`;
+    return `${timeUpdated}${sessionDetails}${separator}${stats}`;
 }
 
 function waitForInterval(ms) {
