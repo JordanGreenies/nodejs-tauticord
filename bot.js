@@ -11,11 +11,12 @@ const TAUTULLI_API_KEY = config.TAUTULLI_API_KEY;
 const DISCORD_BOT_TOKEN = config.DISCORD_BOT_TOKEN;
 const DISCORD_CHANNEL_ID = config.DISCORD_CHANNEL_ID;
 const REFRESH_TIME = config.REFRESH_TIME;
-
 const LAST_MESSAGE_FILE = path.join(__dirname, 'lastMessageId.txt');
-
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+let discordChannel = null;
 let lastMessageId = null;
+
 if (fs.existsSync(LAST_MESSAGE_FILE)) {
     lastMessageId = fs.readFileSync(LAST_MESSAGE_FILE, 'utf8');
 }
@@ -203,28 +204,35 @@ function waitForInterval(ms) {
 }
 
 async function updateDiscordChannel() {
-    const channel = await client.channels.fetch(DISCORD_CHANNEL_ID);
-
-    if (!channel) {
-        console.error('Channel not found. Ensure the DISCORD_CHANNEL_ID is correct.');
-        return;
-    }
-
+	if(!discordChannel)
+	{
+		try {
+			discordChannel = await client.channels.fetch(DISCORD_CHANNEL_ID);
+		} catch (error) {
+			console.error('Failed to fetch channel:', error.message);
+			return;
+		}
+		if (!discordChannel) {
+			console.error('Channel not found. Ensure the DISCORD_CHANNEL_ID is correct.');
+			return;
+		}
+	}
+	
     try {
         const sessions = await fetchStreamingData();
         const messageContent = formatStreamingData(sessions);
-
-        const messages = await channel.messages.fetch({ limit: 1 });
+		
+        const messages = await discordChannel.messages.fetch({ limit: 1 });
         const lastMessage = messages.first();
 
         if (lastMessage && lastMessage.id === lastMessageId && lastMessage.author.id === client.user.id) {
             await lastMessage.edit(messageContent);
         } else {
             if (lastMessageId) {
-                const oldMessage = await channel.messages.fetch(lastMessageId).catch(() => null);
+                const oldMessage = await discordChannel.messages.fetch(lastMessageId).catch(() => null);
                 if (oldMessage) await oldMessage.delete();
             }
-            const newMessage = await channel.send(messageContent);
+            const newMessage = await discordChannel.send(messageContent);
             lastMessageId = newMessage.id;
             saveLastMessageId(lastMessageId);
         }
